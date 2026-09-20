@@ -39,6 +39,27 @@ CREATE TABLE IF NOT EXISTS finalized (
     finalized_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
     PRIMARY KEY (channel, seq)
 );
+
+-- 永久缺口裁决记录：操作员裁决区间 [start_seq, end_seq] 永久丢失。
+-- 按序号落行，并冗余区间端点用于幂等返回及定稿查询的缺口标记
+CREATE TABLE IF NOT EXISTS gap_decisions (
+    channel        TEXT NOT NULL,
+    start_seq      INTEGER NOT NULL,
+    end_seq        INTEGER NOT NULL,
+    released_until INTEGER NOT NULL,
+    decided_at     TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    PRIMARY KEY (channel, start_seq, end_seq)
+);
+
+-- 被跳过序号：每个序号一行，主键防止并发下重复裁决
+CREATE TABLE IF NOT EXISTS gaps (
+    channel   TEXT NOT NULL,
+    seq       INTEGER NOT NULL,
+    start_seq INTEGER NOT NULL,
+    end_seq   INTEGER NOT NULL,
+    PRIMARY KEY (channel, seq),
+    FOREIGN KEY (channel, start_seq, end_seq) REFERENCES gap_decisions
+);
 """
 
 _lock = threading.RLock()
