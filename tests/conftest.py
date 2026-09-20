@@ -19,6 +19,7 @@ def clean_db():
     with write_tx() as conn:
         conn.execute("DELETE FROM finalized")
         conn.execute("DELETE FROM fragments")
+        conn.execute("DELETE FROM gaps")
         conn.execute("DELETE FROM channels")
     yield
 
